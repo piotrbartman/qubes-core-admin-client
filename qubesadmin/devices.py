@@ -43,7 +43,7 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 # - device-assignment-changed: property-set [? this is not great]
 
 
-class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
+class DeviceAssignment:
     """ Maps a device to a frontend_domain. """
 
     def __init__(self, backend_domain, ident, options=None, persistent=False,
@@ -133,7 +133,8 @@ class DeviceAssignment(object):  # pylint: disable=too-few-public-methods
         :return: Dict[str, Any]
         """
 
-class DeviceInfo(object):
+
+class DeviceInfo:
     """ Holds all information about a device """
 
     # pylint: disable=too-few-public-methods
