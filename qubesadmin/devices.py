@@ -46,47 +46,26 @@ import qubesadmin.vm
 # - device-assignment-changed: detached
 # - device-assignment-changed: property-set [? this is not great]
 
-
-class DeviceAssignment:
-    """ Maps a device to a frontend_domain. """
-
-    def __init__(self, backend_domain, ident, options=None, persistent=False,
-                 frontend_domain=None, devclass=None):
+class Device:
+    def __init__(self, backend_domain, ident, devclass=None):
         self.__backend_domain = backend_domain
         self.__ident = ident
-        self.devclass = devclass
-        self.__options = options or {}
-        self.persistent = persistent
-        self.__frontend_domain = frontend_domain
-
-    def __repr__(self):
-        return "[%s]:%s" % (self.__backend_domain, self.ident)
+        self.__bus = devclass
 
     def __hash__(self):
-        return hash((self.__backend_domain, self.ident))
+        return hash((str(self.backend_domain), self.ident))
 
     def __eq__(self, other):
-        if not isinstance(self, other.__class__):
-            return NotImplemented
-
-        return self.__backend_domain == other.backend_domain \
-               and self.ident == other.ident
-
-    def clone(self):
-        """Clone object instance"""
-        return self.__class__(
-            self.__backend_domain,
-            self.ident,
-            self.options,
-            self.persistent,
-            self.frontend_domain,
-            self.devclass,
+        return (
+            self.backend_domain == other.backend_domain and
+            self.ident == other.ident
         )
 
-    @property
-    def device(self):
-        """Get DeviceInfo object corresponding to this DeviceAssignment"""
-        return self.__backend_domain.devices[self.devclass][self.ident]
+    def __repr__(self):
+        return "[%s]:%s" % (self.backend_domain, self.ident)
+
+    def __str__(self):
+        return '{!s}:{!s}'.format(self.backend_domain, self.ident)
 
     @property
     def ident(self) -> str:
@@ -103,6 +82,51 @@ class DeviceAssignment:
         return self.__backend_domain
 
     @property
+    def devclass(self) -> Optional[str]:
+        """ Immutable* Device class such like: 'usb', 'pci' etc.
+
+        * see `@devclass.setter`
+        """
+        return self.__bus
+
+    @devclass.setter
+    def devclass(self, devclass: str):
+        """ Once a value is set, it should not be overridden.
+
+        However, if it has not been set, i.e., the value is `None`,
+        we can override it."""
+        if self.__bus != None:
+            raise TypeError("Attribute devclass is immutable")
+        self.__bus = devclass
+
+
+class DeviceAssignment(Device):
+    """ Maps a device to a frontend_domain. """
+
+    def __init__(self, backend_domain, ident, options=None, persistent=False,
+                 frontend_domain=None, devclass=None):
+        super().__init__(backend_domain, ident, devclass)
+        self.__options = options or {}
+        self.persistent = persistent
+        self.__frontend_domain = frontend_domain
+
+    def clone(self):
+        """Clone object instance"""
+        return self.__class__(
+            self.backend_domain,
+            self.ident,
+            self.options,
+            self.persistent,
+            self.frontend_domain,
+            self.devclass,
+        )
+
+    @property
+    def device(self) -> 'DeviceInfo':
+        """Get DeviceInfo object corresponding to this DeviceAssignment"""
+        return self.backend_domain.devices[self.devclass][self.ident]
+
+    @property
     def frontend_domain(self) -> Optional['qubesadmin.vm.QubesVM']:
         """ Which domain the device is attached to. """
         return self.__frontend_domain
@@ -114,26 +138,34 @@ class DeviceAssignment:
         """ Which domain the device is attached to. """
         self.__frontend_domain = frontend_domain
 
-    # @property
-    # def required(self):
-    #     """
-    #     Is the presence of this device required for the domain to start? If yes,
-    #     it will be attached automatically.
-    #     TODO: this possibly should not be available for usb device? or always False?
-    #     TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
-    #     :return: bool
-    #     """
-    #
-    # @property
-    # def attach_automatically(self):
-    #     """
-    #     Should this device automatically connect to the frontend domain when
-    #     available and not connected to other qubes?
-    #     TODO: this possibly should not be available for usb device? or always False?
-    #     TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
-    #     :return: bool
-    #     """
-    #
+    @property
+    def required(self) -> bool:
+        """
+        Is the presence of this device required for the domain to start? If yes,
+        it will be attached automatically.
+        TODO: this possibly should not be available for usb device? or always False?
+        TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
+        """
+        return self.persistent  # TODO
+
+    @required.setter
+    def required(self, required: bool):
+        self.persistent = required  # TODO
+
+    @property
+    def attach_automatically(self) -> bool:
+        """
+        Should this device automatically connect to the frontend domain when
+        available and not connected to other qubes?
+        TODO: this possibly should not be available for usb device? or always False?
+        TODO: this is a reworking of the previously existing "persistent" attachment, split in two option
+        """
+        return self.persistent  # TODO
+
+    @attach_automatically.setter
+    def attach_automatically(self, attach_automatically: bool):
+        self.persistent = attach_automatically  # TODO
+
     @property
     def options(self) -> Dict[str, Any]:
         """ Device options (same as in the legacy API). """
@@ -145,37 +177,17 @@ class DeviceAssignment:
         self.__options = options or {}
 
 
-class DeviceInfo:
+class DeviceInfo(Device):
     """ Holds all information about a device """
 
     # pylint: disable=too-few-public-methods
     def __init__(self, backend_domain, devclass, ident, description=None,
                  **kwargs):
-        self.__backend_domain = backend_domain
-        #: device class
-        self.devclass = devclass
-        self.__ident = ident
+        super().__init__(backend_domain, ident, devclass)
         #: human-readable description/name of the device
         self.description = description
         self.data = kwargs
 
-    def __hash__(self):
-        return hash((str(self.backend_domain), self.ident))
-
-    def __eq__(self, other):
-        try:
-            return (
-                    self.devclass == other.devclass and
-                    self.backend_domain == other.backend_domain and
-                    self.ident == other.ident
-            )
-        except AttributeError:
-            return False
-
-    def __str__(self):
-        return '{!s}:{!s}'.format(self.backend_domain, self.ident)
-
-    ### NEW API
     # @property
     # def manufacturer(self):
     #     """
@@ -197,27 +209,6 @@ class DeviceInfo:
     #     :return: str
     #     """
     #     # TODO: perhaps this should be an Enum of possible types?
-    #
-    # @property
-    # def devclass(self):
-    #     """
-    #     Device class, for compatibility with previous API:
-    #     :return: str, one of 'usb', 'pci', 'mic'
-    #     """
-
-    @property
-    def ident(self) -> str:
-        """
-        Immutable device identifier.
-
-        Unique for given domain and device type.
-        """
-        return self.__ident
-
-    @property
-    def backend_domain(self) -> 'qubesadmin.vm.QubesVM':
-        """ Which domain provides this device. (immutable)"""
-        return self.__backend_domain
 
     @property
     def parent_device(self) -> Optional[str]:
@@ -241,8 +232,6 @@ class DeviceInfo:
         # TODO
         return []
 
-
-    #
     # @property
     # def port_id(self):
     #     """
