@@ -155,12 +155,8 @@ def info_device(args):
     """ Called by the parser to execute the :program:`qvm-devices info`
         subcommand.
     """
-    print("SUCCESS")
     vm = args.domains[0]
-    print("Let start")
     if args.device_assignment:
-        print("Here we go")
-        args.device_assignment.devclass = "usb"
         print("description:", args.device_assignment.device.description)
         print("data:", args.device_assignment.device.data)
     else:
