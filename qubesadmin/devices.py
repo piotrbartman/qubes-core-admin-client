@@ -242,26 +242,26 @@ class DeviceInfo(Device):
         """
         Short human-readable description.
 
-        For unknown device returns `unknown device (no data)`.
-        For unknown USB device returns `unknown usb device (no data)`.
+        For unknown device returns `unknown device (unknown vendor)`.
+        For unknown USB device returns `unknown usb device (unknown vendor)`.
         For unknown USB device with known serial number returns
-            `unknown usb device (<serial>)`.
+            `<serial> (unknown vendor)`.
         """
         if self.product and self.product != "unknown":
             prod = self.product
         elif self.name and self.name != "unknown":
             prod = self.name
+        elif self.serial and self.serial != "unknown":
+            prod = self.serial
         else:
-            prod = f"unknown device {self.devclass if self.devclass else ''}"
+            prod = f"unknown {self.devclass if self.devclass else ''} device"
 
         if self.vendor and self.vendor != "unknown":
             vendor = self.vendor
         elif self.manufacturer and self.manufacturer != "unknown":
             vendor = self.manufacturer
-        elif self.serial and self.vendor != "unknown":
-            vendor = self.serial
         else:
-            vendor = "no data"
+            vendor = "unknown vendor"
 
         return f"{prod} ({vendor})"
 
