@@ -313,7 +313,7 @@ class DeviceInfo(Device):
         """
         Serialize object to be transmitted via Qubes API.
         """
-        # 'backend_domain' and 'interfaces' are not string so they need
+        # 'backend_domain' and 'interfaces' are not string, so they need
         # special treatment
         default_attrs = {
             'ident', 'devclass', 'vendor', 'product', 'manufacturer', 'name',
@@ -372,7 +372,18 @@ class DeviceInfo(Device):
             DeviceInterface.from_str(interfaces[i:i + 6])
             for i in range(0, len(interfaces), 6)]
         properties['interfaces'] = interfaces
-        return cls(**properties)
+        try:
+            result = cls(**properties)
+        except Exception:
+            # TODO: logs!
+            ident = serialization.split(b' ')[0].decode(
+                'ascii', errors='ignore')
+            result = UnknownDevice(
+                backend_domain=expected_backend_domain,
+                ident=ident,
+                devclass=expected_devclass,
+            )
+        return result
 
     @property
     def frontend_domain(self):
