@@ -33,7 +33,7 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 import base64
 import itertools
 from enum import Enum
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Type
 
 
 # TODO:
@@ -352,6 +352,27 @@ class DeviceInfo(Device):
             expected_backend_domain: 'qubes.vm.qubesvm.QubesVM',
             expected_devclass: Optional[str] = None,
     ) -> 'DeviceInfo':
+        try:
+            result = DeviceInfo._deserialize(
+                cls, serialization, expected_backend_domain, expected_devclass)
+        except Exception:
+            # TODO: logs!
+            ident = serialization.split(b' ')[0].decode(
+                'ascii', errors='ignore')
+            result = UnknownDevice(
+                backend_domain=expected_backend_domain,
+                ident=ident,
+                devclass=expected_devclass,
+            )
+        return result
+
+    @staticmethod
+    def _deserialize(
+            cls: Type,
+            serialization: bytes,
+            expected_backend_domain: 'qubes.vm.qubesvm.QubesVM',
+            expected_devclass: Optional[str] = None,
+    ) -> 'DeviceInfo':
         properties_str = [
             base64.b64decode(line).decode('ascii', errors='ignore')
             for line in serialization.split(b' ')[1:]]
@@ -372,18 +393,8 @@ class DeviceInfo(Device):
             DeviceInterface.from_str(interfaces[i:i + 6])
             for i in range(0, len(interfaces), 6)]
         properties['interfaces'] = interfaces
-        try:
-            result = cls(**properties)
-        except Exception:
-            # TODO: logs!
-            ident = serialization.split(b' ')[0].decode(
-                'ascii', errors='ignore')
-            result = UnknownDevice(
-                backend_domain=expected_backend_domain,
-                ident=ident,
-                devclass=expected_devclass,
-            )
-        return result
+
+        return cls(**properties)
 
     @property
     def frontend_domain(self):
@@ -595,6 +606,7 @@ class DeviceCollection(object):
                 expected_backend_domain=self._vm,
                 expected_devclass=self._class,
             )
+
 
     def update_persistent(self, device, persistent):
         """Update `persistent` flag of already attached device.
