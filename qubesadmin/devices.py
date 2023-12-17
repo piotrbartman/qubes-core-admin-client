@@ -89,12 +89,15 @@ class Device:
         return self.__backend_domain
 
     @property
-    def devclass(self) -> Optional[str]:
+    def devclass(self) -> str:
         """ Immutable* Device class such like: 'usb', 'pci' etc.
 
         *see `@devclass.setter`
         """
-        return self.__bus
+        if self.__bus:
+            return self.__bus
+        else:
+            return ""  # TODO
 
     @devclass.setter
     def devclass(self, devclass: str):
@@ -375,7 +378,7 @@ class DeviceInfo(Device):
     ) -> 'DeviceInfo':
         properties_str = [
             base64.b64decode(line).decode('ascii', errors='ignore')
-            for line in serialization.split(b' ')[1:]]
+            for line in serialization.split(b' ')]
 
         properties = dict()
         for line in properties_str:
