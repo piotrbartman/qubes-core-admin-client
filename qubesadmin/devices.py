@@ -39,13 +39,13 @@ from typing import Optional, Dict, Any, List, Type
 
 # TODO:
 # Proposed device events:
-# - device-list-changed: device-added
-# - device-list-changed: device-remove
+## - device-list-changed: device-added
+## - device-list-changed: device-remove
 # - device-property-changed: property_name
-# - device-assignment-changed: created
-# - device-assignment-changed: removed
-# - device-assignment-changed: attached
-# - device-assignment-changed: detached
+## - device-assignment-changed: created
+## - device-assignment-changed: removed
+## - device-assignment-changed: attached
+## - device-assignment-changed: detached
 # - device-assignment-changed: property-set [? this is not great]
 
 class Device:
@@ -93,12 +93,21 @@ class Device:
     def devclass(self) -> str:
         """ Immutable* Device class such like: 'usb', 'pci' etc.
 
+        For unknown devices "peripheral" is returned.
+
         *see `@devclass.setter`
         """
         if self.__bus:
             return self.__bus
         else:
-            return ""  # TODO
+            return "peripheral"
+
+    @property
+    def devclass_is_set(self) -> bool:
+        """
+        Returns true if devclass is already initialised.
+        """
+        return bool(self.__bus)
 
     @devclass.setter
     def devclass(self, devclass: str):
@@ -517,10 +526,12 @@ class DeviceCollection(object):
         else:
             assert device_assignment.frontend_domain == self._vm, \
                 "Trying to attach DeviceAssignment belonging to other domain"
-        if device_assignment.devclass is None:
+        if not device_assignment.devclass_is_set:
             device_assignment.devclass = self._class
-        else:
-            assert device_assignment.devclass == self._class
+        elif device_assignment.devclass != self._class:
+            raise ValueError(
+                f"Device assignment class does not match to expected: "
+                f"{device_assignment.devclass=}!={self._class=}")
 
         options = device_assignment.options.copy()
         if device_assignment.persistent:
@@ -545,10 +556,12 @@ class DeviceCollection(object):
         else:
             assert device_assignment.frontend_domain == self._vm, \
                 "Trying to detach DeviceAssignment belonging to other domain"
-        if device_assignment.devclass is None:
+        if not device_assignment.devclass_is_set:
             device_assignment.devclass = self._class
-        else:
-            assert device_assignment.devclass == self._class
+        elif device_assignment.devclass != self._class:
+            raise ValueError(
+                f"Device assignment class does not match to expected: "
+                f"{device_assignment.devclass=}!={self._class=}")
 
         self._vm.qubesd_call(None,
                              'admin.vm.device.{}.Detach'.format(self._class),
