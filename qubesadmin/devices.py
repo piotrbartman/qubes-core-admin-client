@@ -32,6 +32,7 @@ Devices are identified by pair of (backend domain, `ident`), where `ident` is
 """
 import base64
 import itertools
+import sys
 from enum import Enum
 from typing import Optional, Dict, Any, List, Type
 
@@ -356,12 +357,13 @@ class DeviceInfo(Device):
             expected_devclass: Optional[str] = None,
     ) -> 'DeviceInfo':
         try:
+            ident, _, serialization = serialization.partition(b' ')
             result = DeviceInfo._deserialize(
                 cls, serialization, expected_backend_domain, expected_devclass)
-        except Exception:
-            # TODO: logs!
+        except Exception as exc:
+            print(exc, file=sys.stderr)
             ident = serialization.split(b' ')[0].decode(
-                'ascii', errors='ignore')
+                'ascii', errors='ignore')  # TODO
             result = UnknownDevice(
                 backend_domain=expected_backend_domain,
                 ident=ident,
@@ -609,7 +611,6 @@ class DeviceCollection(object):
                 expected_backend_domain=self._vm,
                 expected_devclass=self._class,
             )
-
 
     def update_persistent(self, device, persistent):
         """Update `persistent` flag of already attached device.
