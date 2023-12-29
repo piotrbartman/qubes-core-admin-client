@@ -277,6 +277,8 @@ class DeviceInfo(Device):
             prod = self.name
         elif self.serial and self.serial != "unknown":
             prod = self.serial
+        elif self.parent_device is not None:
+            return f"partition of {self.parent_device}"
         else:
             prod = f"unknown {self.devclass if self.devclass else ''} device"
 
@@ -362,14 +364,17 @@ class DeviceInfo(Device):
         interfaces_prop = b'interfaces=' + str(interfaces).encode('ascii')
         properties += b' ' + base64.b64encode(interfaces_prop)
 
-        if self._parent is not None:
-            parent_prop = b'parent=' + self._parent.ident.encode('ascii')
+        if self.parent_device is not None:
+            parent_prop = b'parent=' + self.parent_device.ident.encode('ascii')
             properties += b' ' + base64.b64encode(parent_prop)
 
-        properties += b' ' + b' '.join(
+        data = b' '.join(
             base64.b64encode(f'_{prop}={value!s}'.encode('ascii'))
             for prop, value in ((key, self.data[key]) for key in self.data)
         )
+        if data:
+            properties += b' ' + data
+
         return properties
 
     @classmethod
@@ -383,7 +388,7 @@ class DeviceInfo(Device):
             result = DeviceInfo._deserialize(
                 cls, serialization, expected_backend_domain, expected_devclass)
         except Exception as exc:
-            print(f"Device deserialization error: {exc}", file=sys.stderr)
+            print(exc, file=sys.stderr)  # TODO
             ident = serialization.split(b' ')[0].decode(
                 'ascii', errors='ignore')
             result = UnknownDevice(
@@ -435,6 +440,7 @@ class DeviceInfo(Device):
     @property
     def frontend_domain(self):
         return self.data.get("frontend_domain", None)
+
 
 class UnknownDevice(DeviceInfo):
     # pylint: disable=too-few-public-methods
