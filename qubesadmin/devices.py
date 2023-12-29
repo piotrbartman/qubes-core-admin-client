@@ -382,8 +382,8 @@ class DeviceInfo(Device):
         try:
             result = DeviceInfo._deserialize(
                 cls, serialization, expected_backend_domain, expected_devclass)
-        except Exception:
-            # TODO: logs!
+        except Exception as exc:
+            print(exc, file=sys.stderr)  # TODO
             ident = serialization.split(b' ')[0].decode(
                 'ascii', errors='ignore')
             result = UnknownDevice(
