@@ -484,7 +484,7 @@ class DeviceInfo(Device):
             result = DeviceInfo._deserialize(
                 cls, serialization, expected_backend_domain, expected_devclass)
         except Exception as exc:
-            print(exc, file=sys.stderr)  # TODO
+            print(exc, file=sys.stderr)
             ident = serialization.split(b' ')[0].decode(
                 'ascii', errors='ignore')
             result = UnknownDevice(
@@ -514,10 +514,13 @@ class DeviceInfo(Device):
                 properties[key] = param
 
         if properties['backend_domain'] != expected_backend_domain.name:
-            raise ValueError("TODO")  # TODO
+            raise ValueError("Unexpected device backend domain: "
+                             f"{properties['backend_domain']} != "
+                             f"{expected_backend_domain.name}")
         properties['backend_domain'] = expected_backend_domain
-        # if expected_devclass and properties['devclass'] != expected_devclass:
-        #     raise ValueError("TODO")  # TODO
+        if expected_devclass and properties['devclass'] != expected_devclass:
+            raise ValueError("Unexpected device class: "
+                             f"{properties['devclass']} != {expected_devclass}")
 
         interfaces = properties['interfaces']
         interfaces = [
