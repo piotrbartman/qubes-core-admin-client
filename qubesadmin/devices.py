@@ -213,9 +213,10 @@ class DeviceInterface:
         """ Immutable Device category such like: 'Mouse', 'Mass_Data' etc. """
         return self._category
 
-    @property
-    def unknown(self) -> 'DeviceInterface':
-        return DeviceInterface(" ******")
+    @classmethod
+    def unknown(cls) -> 'DeviceInterface':
+        """ Value for unknown device interface. """
+        return cls(" ******")
 
     @property
     def __repr__(self):
@@ -397,7 +398,7 @@ class DeviceInfo(Device):
         Every device should have at least one interface.
         """
         if not self._interfaces:
-            return [DeviceInterface.unknown]
+            return [DeviceInterface.unknown()]
         return self._interfaces
 
     @property
@@ -549,10 +550,13 @@ class DeviceAssignment(Device):
     """ Maps a device to a frontend_domain. """
 
     def __init__(self, backend_domain, ident, options=None, persistent=False,
-                 frontend_domain=None, devclass=None):
+                 frontend_domain=None, devclass=None,
+                 required=False, attach_automatically=False):
         super().__init__(backend_domain, ident, devclass)
         self.__options = options or {}
         self.persistent = persistent
+        self.__required = required
+        self.__attach_automatically = attach_automatically
         self.__frontend_domain = frontend_domain
 
     def clone(self):
