@@ -80,6 +80,10 @@ Attach the device with *DEVICE_ID* from *BACKEND_DOMAIN* to the domain *VMNAME*
 
    Alias for `--required` for backward compatibility.
 
+.. option:: --auto-attach, -a
+
+   Assign the device to a qube. It will be automatically attached upon the qube's startup or connection. The device will not be automatically attached if it has been manually detached or is already attached to another qube.
+
 aliases: a, at
 
 detach
