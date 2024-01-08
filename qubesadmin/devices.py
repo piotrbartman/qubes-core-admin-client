@@ -822,7 +822,8 @@ class DeviceCollection:
             )
 
     def update_assignment(self, device: DeviceInfo, required: Optional[bool]):
-        """Update assignment of already attached device.
+        """
+        Update assignment of already attached device.
 
         :param DeviceInfo device: device for which change required flag
         :param bool required: new assignment:
